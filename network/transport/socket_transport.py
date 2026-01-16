@@ -64,7 +64,7 @@ class SocketTransport:
         else: 
             self.sock.sendall(data) #type: ignore => Nunca será None
 
-    def get_incoming_msg(self):
+    def get_incoming_msgs(self):
         list_msg = []
 
         while not self.incoming.empty():
