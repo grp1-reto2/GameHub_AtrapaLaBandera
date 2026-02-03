@@ -23,10 +23,11 @@ class GameServer:
 
     def start(self):
         print(f"[SERVIDOR] Iniciado en puerto {PORT}")
-        threading.Thread(target=self._accept_loop, daemon=True).start()
+        threading.Thread(target=self._accept_loop, daemon=True).start() # Se inicia el loop para acpetar conexión en un hilo.
 
-        self.api = FlaskModule(self)
-        self.api.start()
+        # Se crean tanto el modulo de Flask y la conexion a Spring.
+        self.api = FlaskModule(self) 
+        self.api.start() # y se inicia.
 
         self.spring = SpringModule(self)
         
@@ -36,7 +37,7 @@ class GameServer:
                 conn, addr = self.sock.accept()
                 self.clients.append(conn)
 
-                p_id = len(self.clients) # TODO: Mejorar ID
+                p_id = len(self.clients)
 
                 color_index = (p_id - 1) % len(PLAYER_PALETTE)
                 color = PLAYER_PALETTE[color_index]
@@ -48,11 +49,11 @@ class GameServer:
                 spawn_index = (p_id - 1) % len(SPAWN_POINTS)
                 self.game_state.players[p_id].pos =  SPAWN_POINTS[spawn_index]
                 
-                threading.Thread(target=self._handle_client, args=(conn, p_id), daemon=True).start()
+                threading.Thread(target=self._handle_client, args=(conn, p_id), daemon=True).start() # Un hilo por cada conexión.
 
                 if len(self.clients) >= 4 and not self.game_started:
                     self.game_started = True
-                    threading.Thread(target=self._start_countdown, daemon=True).start()
+                    threading.Thread(target=self._start_countdown, daemon=True).start() #Al llegar al maximo de jugadores > iniciamos countdown.
 
             except Exception as e:
                 print(e)
@@ -75,15 +76,15 @@ class GameServer:
             "type": "game_start", 
             "state": self.game_state.to_dict(),
         }
-        self.broadcast(start_msg)
+        self.broadcast(start_msg) #Cuando termine > mensaje a todos.
 
-    def _handle_client(self, conn, p_id):
+    def _handle_client(self, conn, p_id): #loop de la conexión de cada cliente
         try:
-            init_msg = json.dumps({"type" : "init", "id": p_id})
+            init_msg = json.dumps({"type" : "init", "id": p_id}) #mandamos id a cada cliente.
             conn.send(init_msg.encode())
         except Exception as e:
             print(e)
-            if conn in self.clients: self.clients.remove(conn)
+            if conn in self.clients: self.clients.remove(conn) # si por lo que se a da error. Se quita la conexión.
             return
         
         while self.running:
@@ -93,16 +94,18 @@ class GameServer:
                 msg = json.loads(data.decode())
 
                 if self.game_state.status == "FINISHED":
-                    continue
-
-                if "name" in msg:
+                    continue # si estatus finished se ignora.
+                
+                    # diferentes eventos que llegan.
+                if "name" in msg: #nombre de cada usuario.
                     player_name = msg["name"]
                     p = self.game_state.players.get(p_id)
                     if not p: continue
 
                     p.name = player_name
 
-                if "action" in msg:
+                if "action" in msg: # intento de movimiento de cada usuario.
+                    # El servidor decide si el movimiento es valido o si hay cambio de bandera. O si hay punto > Bandera al medio.
                     dx, dy = msg["action"]
 
                     p = self.game_state.players.get(p_id)
@@ -166,6 +169,8 @@ class GameServer:
             except Exception as e:
                 print(f"[ERROR] {e}")
                 break
+
+        #Manejamos la desconexión  de un jugador.
 
         print(f"[SERVIDOR] Jugador {p_id} desconectado")
         

@@ -12,26 +12,27 @@ class Main:
     def start_as_host(self):
         try: 
             print("[MANAGER] Iniciando servidor en segundo plano...")
-            self.server_instance = GameServer()
+            self.server_instance = GameServer() # Se crea la instancia del servidor.
             
-            self.server_instance.start() 
+            self.server_instance.start() # Inicia.
             
             print(f"[MANAGER] Servidor listo en IP: {self.server_instance.ip}")
         except OSError as e:
             print(f"[ERROR] No se pudo iniciar servidor: {e}")
             return False
         
-        time.sleep(1) 
+        time.sleep(1) # Espera 1s, para tener tiempo a que se ejecute del todo el servidor.
+        # Seguramente es demasiado, pero por si acaso.
 
         print("[MANAGER] Iniciando cliente del host...")
-        target_ip = self.server_instance.ip if self.server_instance.ip else "127.0.0.1"
+        target_ip = self.server_instance.ip if self.server_instance.ip else "127.0.0.1" # Se recoge la ip del servidor == "127.0.0.1"
         
-        self.game = GameClient(target_ip)
+        self.game = GameClient(target_ip) # Se crea la instancia el Cliente.
         
-        if hasattr(self.game, 'player_name'):
+        if hasattr(self.game, 'player_name'): # Le pasamos el nombre.
             self.game.player_name = self.name
 
-        if self.game.connect():
+        if self.game.connect(): #Conectamos.
             print("[MANAGER] Cliente conectado. Abriendo ventana...")
             self.game.run_game()
         else:

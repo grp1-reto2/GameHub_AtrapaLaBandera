@@ -19,56 +19,57 @@ class GameClient:
         self.countdown_value = 0 
         self.waiting_for_players = True 
 
-        self.visual_players = {}
+        self.visual_players = {} # Para animaciones.
 
-        self.last_move_time = 0
-        self.move_delay = 100
+        self.last_move_time = 0 
+        self.move_delay = 100 # Se utilizan para que los jugadores no mantengan presionado una tecla, (Corta el input¿?)
+
         self.player_name = None
 
     def connect(self):
         try:
             self.sock.connect((self.server_ip, PORT))
-            threading.Thread(target=self.receive_loop, daemon=True).start()
+            threading.Thread(target=self.receive_loop, daemon=True).start() # Conectamos y creamos un hilo para no para la ejecución.
             return True
         except Exception as e:
             print(f"Error al conectar: {e}")
             return False
 
-    def receive_loop(self):
+    def receive_loop(self): #hilo.
         while True:
             try:
-                data = self.sock.recv(BUFFER_SIZE)
+                data = self.sock.recv(BUFFER_SIZE) #recibir mensaje
                 if not data: break
 
                 msg = json.loads(data.decode('utf-8'))
                 
                 msg_type = msg.get("type")
 
-                if msg_type == "init":
+                if msg_type == "init": # si el tipo es "init". 
                     self.connected = True
-                    self.my_id = msg["id"]
+                    self.my_id = msg["id"] #recogemos nuestra id.
                     print(f"[TERMINAL] Conectado. ID: {self.my_id}. Esperando rival...")
 
-                    self.send_name(self.player_name)
+                    self.send_name(self.player_name) # Y mandamos el nombre.
 
-                elif msg_type == "countdown":
+                elif msg_type == "countdown": # Ya se ha conectado el número máximo de jugadores. Cuenta atras.
                     self.waiting_for_players = False
                     self.countdown_value = msg["value"]
                     print(f"[TERMINAL] Cuenta atrás: {self.countdown_value}")
 
-                elif msg_type == "game_start":
+                elif msg_type == "game_start": # Empieza la partida.
                     self.game_started = True
                     self.countdown_value = 0
 
                     if "state" in msg:
-                        self.state.update(msg["state"])
+                        self.state.update(msg["state"]) # Recogemos el estado inicial que nos manda el servidor.
 
                     print(f"[TERMINAL] ¡JUEGO INICIADO!")
 
                 elif msg_type == "update":
-                    self.state.update(msg["state"])
+                    self.state.update(msg["state"]) # cada vez que llega un update se carga el estado.
 
-                for pid, player_obj in self.state.players.items():
+                for pid, player_obj in self.state.players.items(): # Animaciones.
                     if pid not in self.visual_players:
                         gx, gy = player_obj.pos
                         self.visual_players[pid] = {'x': gx * GRID_CELL, 'y': gy * GRID_CELL}
@@ -80,7 +81,7 @@ class GameClient:
                 print(e)
                 break
 
-    def send_action(self, action):
+    def send_action(self, action): #Funcion para mandar la intención de moverse.
         if self.connected and self.game_started:
             try:
                 mensaje = json.dumps({"action": action})
@@ -89,7 +90,7 @@ class GameClient:
                 print(e)
                 pass
 
-    def send_name(self, msg):
+    def send_name(self, msg): # Mandamos el nombre.
         if self.connected:
             try:
                 mensaje = json.dumps({"name": msg})
@@ -98,7 +99,7 @@ class GameClient:
                 print(e)
                 pass
 
-    def run_game(self, title_suffix=""):
+    def run_game(self, title_suffix=""): #Loop del juego.
         pygame.init()
         screen = pygame.display.set_mode((ANCHO, ALTO))
         pygame.display.set_caption(f"Cliente {self.my_id}")
@@ -115,7 +116,7 @@ class GameClient:
                 
             if self.game_started and self.state.status == "PLAYING": 
                 current_time = pygame.time.get_ticks()
-                if current_time - self.last_move_time > self.move_delay:
+                if current_time - self.last_move_time > self.move_delay: # Cortamos el input. Y recogemos los eventos.
                     keys = pygame.key.get_pressed()
                     dx, dy = 0, 0
                     if keys[pygame.K_w]: dx, dy = 0, -1
@@ -123,10 +124,11 @@ class GameClient:
                     elif keys[pygame.K_a]: dx, dy = -1, 0
                     elif keys[pygame.K_d]: dx, dy = 1, 0
                     
-                    if dx != 0 or dy != 0:
+                    if dx != 0 or dy != 0: # si nos hemos movido, mandamos la accion. Puede ser que sel servidor denege el movimiento. por ejemplo, por una colisión.
                         self.send_action((dx, dy))
                         self.last_move_time = current_time
 
+            # Renderizado del dibujo.
             screen.fill(COLORES["BG"])
             
             if self.waiting_for_players:

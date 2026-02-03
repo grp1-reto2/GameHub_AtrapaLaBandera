@@ -1,6 +1,6 @@
 import socket
 
-def get_local_ip():
+def get_local_ip(): # para recoger la IP local
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         s.connect(("8.8.8.8", 80))

@@ -1,3 +1,5 @@
+# Diferentes clases para poder gestionar los datos de game_state mas fácil.
+
 class Player:
     def __init__(self, name: str, color):
         self.name = name

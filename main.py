@@ -1,6 +1,7 @@
 from game_module import GameModule 
 
 def main():
+    # Menu de inicio. 
     print("--- MENU DE INICIO ---")
     name = input("Nombre de usuario: ")
     print("1. Unirse a partida (Cliente)")
@@ -13,17 +14,17 @@ def main():
         return
 
 
-    manager = GameModule(name)
+    manager = GameModule(name) # Se crea la instancia del juego.
     
     if resp == 2:
-        print("Iniciando como HOST...")
+        print("Iniciando como HOST...") # Si la respuesta es 2 se intenta crear el servidor.
         try:
             manager.start_as_host()
         except Exception as e:
             print(f"Error iniciando Host: {e}")
             import traceback; traceback.print_exc()
     else:
-        ip = input("IP del servidor:")
+        ip = input("IP del servidor:") # Si no es 2, se pide IP y se intenta conectar al servidor.
         if not ip: ip = "127.0.0.1"
         
         print(f"Conectando a {ip}...")
